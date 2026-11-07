@@ -9,6 +9,7 @@ import '../theme.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/copy_sheet.dart';
 import 'account_form_screen.dart';
+import 'backup_screen.dart';
 import 'pick_app_screen.dart';
 
 /// Màn hình 2: Tài khoản (màn hình chính) — lưới biểu tượng 3 cột.
@@ -40,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Thêm app: chọn app → nhập tài khoản → lưu.
   Future<void> _addAccount() async {
-    final app = await Navigator.of(context).push<InstalledApp>(
+        final app = await Navigator.of(context).push<InstalledApp>(
       MaterialPageRoute(builder: (_) => const PickAppScreen()),
     );
     if (app == null || !mounted) return;
@@ -77,6 +78,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+   /// Mở màn hình Sao lưu (trong đó có lối vào Khôi phục).
+  Future<void> _openBackup() async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const BackupScreen()),
+    );
+    if (changed == true && mounted) setState(() {});
+  }
+ 
   void _comingSoon(String feature, int stage) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -123,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _BottomButton(
                       icon: Icons.save_alt_rounded,
                       label: 'Sao lưu',
-                      onPressed: () => _comingSoon('Sao lưu', 5),
+                                            onPressed: _openBackup,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -314,4 +323,44 @@ class _BottomButton extends StatelessWidget {
       ),
     );
   }
+}
+
+
+/// Một tài khoản ở dạng CHƯA mã hóa.
+/// CHỈ dùng tạm trong lúc tạo hoặc đọc file sao lưu (file đó được mã hóa riêng).
+class PlainAccount {
+  const PlainAccount({
+    required this.appName,
+    required this.packageName,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.passwordChangedAt,
+    required this.secret,
+  });
+
+  final String appName;
+  final String packageName;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime passwordChangedAt;
+  final AccountSecret secret;
+
+  Map<String, dynamic> toJson() => {
+        'app': appName,
+        'pkg': packageName,
+        'created': createdAt.millisecondsSinceEpoch,
+        'updated': updatedAt.millisecondsSinceEpoch,
+        'pwChanged': passwordChangedAt.millisecondsSinceEpoch,
+        'secret': secret.toJson(),
+      };
+
+  factory PlainAccount.fromJson(Map<String, dynamic> json) => PlainAccount(
+        appName: json['app'] as String,
+        packageName: json['pkg'] as String,
+        createdAt: DateTime.fromMillisecondsSinceEpoch(json['created'] as int),
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(json['updated'] as int),
+        passwordChangedAt:
+            DateTime.fromMillisecondsSinceEpoch(json['pwChanged'] as int),
+        secret: AccountSecret.fromJson(json['secret'] as Map<String, dynamic>),
+      );
 }

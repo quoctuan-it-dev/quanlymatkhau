@@ -1,5 +1,6 @@
 package com.giadinh.quanlymatkhau
 
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -10,14 +11,21 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.util.concurrent.Executors
 
 /**
  * Cầu nối giữa Flutter và Android.
  * Kênh "apps": danh sách app đã cài, biểu tượng, kiểm tra/mở app,
- * và sao chép an toàn vào bộ nhớ tạm.
+ * sao chép an toàn vào bộ nhớ tạm, và lưu/mở file sao lưu.
  */
 class MainActivity : FlutterActivity() {
+    companion object {
+        private const val REQ_SAVE_FILE = 5101
+        private const val REQ_OPEN_FILE = 5102
+        private const val MAX_FILE_BYTES = 5 * 1024 * 1024 // 5 MB
+    }
+
     private val channelName = "com.giadinh.quanlymatkhau/apps"
     private val worker = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -25,6 +33,10 @@ class MainActivity : FlutterActivity() {
     // true = lần tới app có tiêu điểm thì kiểm tra bộ nhớ tạm.
     // Lớp 2: true ngay khi app vừa mở. Lớp 1: true lại sau khi app bị che (đã sang app khác).
     private var checkClipboardOnFocus = true
+
+    // Đang chờ người dùng chọn file trong hộp chọn của Android.
+    private var pendingFileResult: MethodChannel.Result? = null
+    private var pendingBytes: ByteArray? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -55,6 +67,13 @@ class MainActivity : FlutterActivity() {
                             result.success(null)
                         }
                     }
+                    "saveFile" -> {
+                        val name = call.argument<String>("fileName")
+                        val bytes = call.argument<ByteArray>("bytes")
+                        if (name == null || bytes == null) result.error("ARG", "Thiếu dữ liệu", null)
+                        else saveFile(name, bytes, result)
+                    }
+                    "openFile" -> openFile(result)
                     else -> result.notImplemented()
                 }
             }
@@ -73,6 +92,86 @@ class MainActivity : FlutterActivity() {
             ClipboardGuard.clearIfOurs(this)
         }
     }
+
+    // ---------- Lưu / mở file sao lưu (hộp chọn file của Android) ----------
+
+    /** Mở hộp "Lưu vào..." để người dùng chọn nơi lưu (Google Drive, bộ nhớ máy...). */
+    private fun saveFile(name: String, bytes: ByteArray, result: MethodChannel.Result) {
+        if (pendingFileResult != null) {
+            result.error("BUSY", "Đang chọn file", null)
+            return
+        }
+        pendingFileResult = result
+        pendingBytes = bytes
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/octet-stream"
+            putExtra(Intent.EXTRA_TITLE, name)
+        }
+        startActivityForResult(intent, REQ_SAVE_FILE)
+    }
+
+    /** Mở hộp chọn file để người dùng chọn file sao lưu. */
+    private fun openFile(result: MethodChannel.Result) {
+        if (pendingFileResult != null) {
+            result.error("BUSY", "Đang chọn file", null)
+            return
+        }
+        pendingFileResult = result
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
+        }
+        startActivityForResult(intent, REQ_OPEN_FILE)
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != REQ_SAVE_FILE && requestCode != REQ_OPEN_FILE) return
+        val result = pendingFileResult ?: return
+        val bytes = pendingBytes
+        pendingFileResult = null
+        pendingBytes = null
+
+        val uri = data?.data
+        if (resultCode != Activity.RESULT_OK || uri == null) {
+            result.success(null) // người dùng bấm hủy
+            return
+        }
+        worker.execute {
+            try {
+                val value: Any = if (requestCode == REQ_SAVE_FILE) {
+                    val out = contentResolver.openOutputStream(uri, "w")
+                        ?: throw IllegalStateException("Không mở được nơi lưu")
+                    out.use { it.write(bytes ?: ByteArray(0)) }
+                    true
+                } else {
+                    val input = contentResolver.openInputStream(uri)
+                        ?: throw IllegalStateException("Không mở được file")
+                    input.use { readLimited(it) }
+                }
+                mainHandler.post { result.success(value) }
+            } catch (e: Exception) {
+                mainHandler.post { result.error("FILE", e.message, null) }
+            }
+        }
+    }
+
+    /** Đọc file, tối đa 5 MB (file sao lưu thật chỉ vài KB). */
+    private fun readLimited(input: InputStream): ByteArray {
+        val out = ByteArrayOutputStream()
+        val buffer = ByteArray(8192)
+        while (true) {
+            val n = input.read(buffer)
+            if (n < 0) break
+            out.write(buffer, 0, n)
+            if (out.size() > MAX_FILE_BYTES) throw IllegalStateException("File quá lớn")
+        }
+        return out.toByteArray()
+    }
+
+    // ---------- Các phần từ giai đoạn trước ----------
 
     /** Chạy việc nặng ở luồng nền để giao diện không bị giật. */
     private fun runInBackground(result: MethodChannel.Result, task: () -> Any?) {

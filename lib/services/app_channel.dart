@@ -61,4 +61,20 @@ class AppChannel {
   static Future<void> copySecret(String text) async {
     await _channel.invokeMethod<void>('copySecret', {'text': text});
   }
+
+
+  /// Mở hộp "Lưu vào..." của Android.
+  /// Trả về true nếu đã lưu, false nếu người dùng bấm hủy.
+  static Future<bool> saveFile(String fileName, Uint8List bytes) async {
+    final saved = await _channel.invokeMethod<bool>(
+      'saveFile',
+      {'fileName': fileName, 'bytes': bytes},
+    );
+    return saved ?? false;
+  }
+
+  /// Mở hộp chọn file. Trả về nội dung file, hoặc null nếu người dùng bấm hủy.
+  static Future<Uint8List?> openFile() async {
+    return _channel.invokeMethod<Uint8List>('openFile');
+  }
 }

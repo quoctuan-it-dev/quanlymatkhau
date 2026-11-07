@@ -82,3 +82,42 @@ class AccountSecret {
         previousPassword: json['prev'] as String?,
       );
 }
+
+/// Một tài khoản ở dạng CHƯA mã hóa.
+/// CHỈ dùng tạm trong lúc tạo hoặc đọc file sao lưu (file đó được mã hóa riêng).
+class PlainAccount {
+  const PlainAccount({
+    required this.appName,
+    required this.packageName,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.passwordChangedAt,
+    required this.secret,
+  });
+
+  final String appName;
+  final String packageName;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime passwordChangedAt;
+  final AccountSecret secret;
+
+  Map<String, dynamic> toJson() => {
+        'app': appName,
+        'pkg': packageName,
+        'created': createdAt.millisecondsSinceEpoch,
+        'updated': updatedAt.millisecondsSinceEpoch,
+        'pwChanged': passwordChangedAt.millisecondsSinceEpoch,
+        'secret': secret.toJson(),
+      };
+
+  factory PlainAccount.fromJson(Map<String, dynamic> json) => PlainAccount(
+        appName: json['app'] as String,
+        packageName: json['pkg'] as String,
+        createdAt: DateTime.fromMillisecondsSinceEpoch(json['created'] as int),
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(json['updated'] as int),
+        passwordChangedAt:
+            DateTime.fromMillisecondsSinceEpoch(json['pwChanged'] as int),
+        secret: AccountSecret.fromJson(json['secret'] as Map<String, dynamic>),
+      );
+}

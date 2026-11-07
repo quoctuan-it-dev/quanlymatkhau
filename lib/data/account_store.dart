@@ -106,6 +106,40 @@ class AccountStore {
     await _save(_items.where((a) => a.id != account.id).toList());
   }
 
+  /// Giải mã toàn bộ tài khoản (chỉ dùng để tạo file sao lưu).
+  Future<List<PlainAccount>> exportPlain() async {
+    final result = <PlainAccount>[];
+    for (final a in _items) {
+      result.add(PlainAccount(
+        appName: a.appName,
+        packageName: a.packageName,
+        createdAt: a.createdAt,
+        updatedAt: a.updatedAt,
+        passwordChangedAt: a.passwordChangedAt,
+        secret: await readSecret(a),
+      ));
+    }
+    return result;
+  }
+
+  /// Thay TOÀN BỘ dữ liệu bằng danh sách từ file sao lưu.
+  /// Mỗi tài khoản được mã hóa lại bằng chìa khóa của máy này.
+  Future<void> replaceAll(List<PlainAccount> entries) async {
+    final next = <Account>[];
+    for (final e in entries) {
+      final id = _newId();
+      next.add(Account(
+        id: id,
+        appName: e.appName,
+        packageName: e.packageName,
+        createdAt: e.createdAt,
+        updatedAt: e.updatedAt,
+        passwordChangedAt: e.passwordChangedAt,
+        secretBox: await _sealSecret(id, e.secret),
+      ));
+    }
+    await _save(next);
+  }
   // ---- phần nội bộ ----
 
   /// Ghi xuống máy trước, thành công rồi mới cập nhật danh sách đang hiện.
