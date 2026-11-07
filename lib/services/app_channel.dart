@@ -1,5 +1,9 @@
 import 'package:flutter/services.dart';
 
+/// Thời gian tự xóa bộ nhớ tạm, tính bằng phút.
+/// Phải giống AUTO_CLEAR_MINUTES trong ClipboardGuard.kt.
+const int kClipboardClearMinutes = 15;
+
 /// Một app đã cài trên điện thoại.
 class InstalledApp {
   const InstalledApp({required this.packageName, required this.label});
@@ -51,5 +55,10 @@ class AppChannel {
     return await _channel.invokeMethod<bool>(
             'launchApp', {'packageName': packageName}) ??
         false;
+  }
+
+  /// Sao chép vào bộ nhớ tạm, đánh dấu nhạy cảm và hẹn giờ tự xóa.
+  static Future<void> copySecret(String text) async {
+    await _channel.invokeMethod<void>('copySecret', {'text': text});
   }
 }

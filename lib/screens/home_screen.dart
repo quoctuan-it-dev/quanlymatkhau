@@ -7,6 +7,7 @@ import '../data/account_store.dart';
 import '../services/app_channel.dart';
 import '../theme.dart';
 import '../widgets/app_icon.dart';
+import '../widgets/copy_sheet.dart';
 import 'account_form_screen.dart';
 import 'pick_app_screen.dart';
 
@@ -54,18 +55,26 @@ class _HomeScreenState extends State<HomeScreen> {
     if (saved == true && mounted) setState(() {});
   }
 
-  /// Bấm vào một app. Giai đoạn 4 sẽ đổi thành cửa sổ sao chép.
+    /// Bấm vào một app: mở cửa sổ sao chép.
   Future<void> _openAccount(Account account) async {
-    final changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => AccountFormScreen(
-          appName: account.appName,
-          packageName: account.packageName,
-          account: account,
+    final result = await showCopySheet(context, account);
+    if (!mounted) return;
+    if (result == CopySheetResult.deleted) {
+      setState(() {});
+      return;
+    }
+    if (result == CopySheetResult.edit) {
+      final changed = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => AccountFormScreen(
+            appName: account.appName,
+            packageName: account.packageName,
+            account: account,
+          ),
         ),
-      ),
-    );
-    if (changed == true && mounted) setState(() {});
+      );
+      if (changed == true && mounted) setState(() {});
+    }
   }
 
   void _comingSoon(String feature, int stage) {
