@@ -118,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 4),
                 child: Text(
-                  'Bấm vào app để lấy mật khẩu',
+                'Bấm vào biểu tượng app để lấy mật khẩu',
                   style: TextStyle(fontSize: 18, color: AppColors.textSub),
                 ),
               ),
