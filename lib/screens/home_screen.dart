@@ -11,6 +11,7 @@ import '../widgets/copy_sheet.dart';
 import 'account_form_screen.dart';
 import 'backup_screen.dart';
 import 'pick_app_screen.dart';
+import 'update_screen.dart';
 
 /// Màn hình 2: Tài khoản (màn hình chính) — lưới biểu tượng 3 cột.
 class HomeScreen extends StatefulWidget {
@@ -41,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Thêm app: chọn app → nhập tài khoản → lưu.
   Future<void> _addAccount() async {
-        final app = await Navigator.of(context).push<InstalledApp>(
+    final app = await Navigator.of(context).push<InstalledApp>(
       MaterialPageRoute(builder: (_) => const PickAppScreen()),
     );
     if (app == null || !mounted) return;
@@ -56,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (saved == true && mounted) setState(() {});
   }
 
-    /// Bấm vào một app: mở cửa sổ sao chép.
+  /// Bấm vào một app: mở cửa sổ sao chép.
   Future<void> _openAccount(Account account) async {
     final result = await showCopySheet(context, account);
     if (!mounted) return;
@@ -78,20 +79,18 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-   /// Mở màn hình Sao lưu (trong đó có lối vào Khôi phục).
+  /// Mở màn hình Sao lưu (trong đó có lối vào Khôi phục).
   Future<void> _openBackup() async {
     final changed = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => const BackupScreen()),
     );
     if (changed == true && mounted) setState(() {});
   }
- 
-  void _comingSoon(String feature, int stage) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature sẽ có ở giai đoạn $stage.',
-            style: const TextStyle(fontSize: 17)),
-      ),
+
+  /// Mở màn hình Cập nhật app.
+  Future<void> _openUpdate() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => const UpdateScreen()),
     );
   }
 
@@ -132,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _BottomButton(
                       icon: Icons.save_alt_rounded,
                       label: 'Sao lưu',
-                                            onPressed: _openBackup,
+                      onPressed: _openBackup,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -140,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _BottomButton(
                       icon: Icons.system_update_alt_rounded,
                       label: 'Cập nhật app',
-                      onPressed: () => _comingSoon('Cập nhật app', 6),
+                      onPressed: _openUpdate,
                     ),
                   ),
                 ],
@@ -223,6 +222,7 @@ class _AccountTile extends StatelessWidget {
     );
   }
 }
+
 /// Ô "Thêm app": ô vuông viền nét đứt màu xanh, có dấu +.
 class _AddTile extends StatelessWidget {
   const _AddTile({required this.onTap});
@@ -323,44 +323,4 @@ class _BottomButton extends StatelessWidget {
       ),
     );
   }
-}
-
-
-/// Một tài khoản ở dạng CHƯA mã hóa.
-/// CHỈ dùng tạm trong lúc tạo hoặc đọc file sao lưu (file đó được mã hóa riêng).
-class PlainAccount {
-  const PlainAccount({
-    required this.appName,
-    required this.packageName,
-    required this.createdAt,
-    required this.updatedAt,
-    required this.passwordChangedAt,
-    required this.secret,
-  });
-
-  final String appName;
-  final String packageName;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final DateTime passwordChangedAt;
-  final AccountSecret secret;
-
-  Map<String, dynamic> toJson() => {
-        'app': appName,
-        'pkg': packageName,
-        'created': createdAt.millisecondsSinceEpoch,
-        'updated': updatedAt.millisecondsSinceEpoch,
-        'pwChanged': passwordChangedAt.millisecondsSinceEpoch,
-        'secret': secret.toJson(),
-      };
-
-  factory PlainAccount.fromJson(Map<String, dynamic> json) => PlainAccount(
-        appName: json['app'] as String,
-        packageName: json['pkg'] as String,
-        createdAt: DateTime.fromMillisecondsSinceEpoch(json['created'] as int),
-        updatedAt: DateTime.fromMillisecondsSinceEpoch(json['updated'] as int),
-        passwordChangedAt:
-            DateTime.fromMillisecondsSinceEpoch(json['pwChanged'] as int),
-        secret: AccountSecret.fromJson(json['secret'] as Map<String, dynamic>),
-      );
 }

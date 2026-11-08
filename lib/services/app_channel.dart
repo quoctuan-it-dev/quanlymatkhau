@@ -62,7 +62,6 @@ class AppChannel {
     await _channel.invokeMethod<void>('copySecret', {'text': text});
   }
 
-
   /// Mở hộp "Lưu vào..." của Android.
   /// Trả về true nếu đã lưu, false nếu người dùng bấm hủy.
   static Future<bool> saveFile(String fileName, Uint8List bytes) async {
@@ -76,5 +75,47 @@ class AppChannel {
   /// Mở hộp chọn file. Trả về nội dung file, hoặc null nếu người dùng bấm hủy.
   static Future<Uint8List?> openFile() async {
     return _channel.invokeMethod<Uint8List>('openFile');
+  }
+
+  /// Phiên bản app đang cài, ví dụ name = "1.0.0", code = 1.
+  static Future<({String name, int code})> getAppVersion() async {
+    final m =
+        await _channel.invokeMapMethod<String, dynamic>('getAppVersion') ?? {};
+    return (
+      name: m['versionName'] as String? ?? '',
+      code: (m['versionCode'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  /// Thư mục tạm để chứa file APK tải về.
+  static Future<String> getUpdateDir() async {
+    return (await _channel.invokeMethod<String>('getUpdateDir'))!;
+  }
+
+  /// Người dùng đã cho phép app này mở trình cài đặt chưa.
+  static Future<bool> canInstallPackages() async {
+    return await _channel.invokeMethod<bool>('canInstallPackages') ?? false;
+  }
+
+  /// Mở trang "Cho phép cài ứng dụng từ nguồn này".
+  static Future<void> openInstallPermissionSettings() async {
+    await _channel.invokeMethod<void>('openInstallPermissionSettings');
+  }
+
+  /// Kiểm tra file APK: có đúng là app này không, và số phiên bản bao nhiêu.
+  static Future<({bool valid, int code})> checkApk(String path) async {
+    final m = await _channel
+            .invokeMapMethod<String, dynamic>('checkApk', {'path': path}) ??
+        {};
+    return (
+      valid: m['valid'] == true,
+      code: (m['versionCode'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  /// Mở màn hình cài đặt của Android cho file APK.
+  static Future<bool> installApk(String path) async {
+    return await _channel.invokeMethod<bool>('installApk', {'path': path}) ??
+        false;
   }
 }
