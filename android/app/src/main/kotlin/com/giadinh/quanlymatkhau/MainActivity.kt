@@ -2,11 +2,14 @@ package com.giadinh.quanlymatkhau
 
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -37,6 +40,20 @@ class MainActivity : FlutterActivity() {
     // Đang chờ người dùng chọn file trong hộp chọn của Android.
     private var pendingFileResult: MethodChannel.Result? = null
     private var pendingBytes: ByteArray? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Chặn chụp/quay màn hình và ẩn nội dung ở màn hình đa nhiệm.
+        // Chỉ bật ở bản release; bản debug để trống để còn chụp màn hình khi lập trình.
+        val isDebuggable =
+            (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        if (!isDebuggable) {
+            window.setFlags(
+                WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE,
+            )
+        }
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -213,7 +230,7 @@ class MainActivity : FlutterActivity() {
         return out.toByteArray()
     }
 
-    private fun isInstalled(pkg: String): Boolean =
+        private fun isInstalled(pkg: String): Boolean =
         packageManager.getLaunchIntentForPackage(pkg) != null
 
     /** Mở app đích. Trả về false nếu app chưa cài. */

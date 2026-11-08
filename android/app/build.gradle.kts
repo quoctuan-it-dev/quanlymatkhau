@@ -1,11 +1,11 @@
 import java.io.FileInputStream
 import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
-
 
 // Đọc mật khẩu keystore từ android/key.properties (file này KHÔNG đưa lên Git).
 val keystoreProperties = Properties()
@@ -25,7 +25,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        // Mã định danh app. KHÔNG được đổi, đổi là không cập nhật đè được nữa.
         applicationId = "com.giadinh.quanlymatkhau"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
@@ -39,7 +39,8 @@ android {
         versionName = flutter.versionName
     }
 
-        signingConfigs {
+    // Con dấu (keystore) thật của app.
+    signingConfigs {
         create("release") {
             keyAlias = keystoreProperties["keyAlias"] as String
             keyPassword = keystoreProperties["keyPassword"] as String
@@ -50,6 +51,11 @@ android {
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
+        }
+        // Bản debug cũng dùng con dấu thật, để chuyển qua lại
+        // giữa debug và release không phải gỡ app (không mất dữ liệu).
+        debug {
             signingConfig = signingConfigs.getByName("release")
         }
     }
