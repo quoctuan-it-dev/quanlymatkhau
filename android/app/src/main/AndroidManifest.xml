@@ -1,8 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Chỉ dùng khi người dùng bấm "Cập nhật app" (kiểm tra và tải bản mới từ GitHub). -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Cho phép mở màn hình cài bản cập nhật (người dùng vẫn phải bấm đồng ý). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <application
-       android:label="Quản lý mật khẩu"
-       android:allowBackup="false"
-       android:dataExtractionRules="@xml/data_extraction_rules"
+        android:label="Quản lý mật khẩu"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -14,10 +19,6 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-            <!-- Specifies an Android theme to apply to this Activity as soon as
-                 the Android process has started. This theme is visible to the user
-                 while the Flutter UI initializes. After that, this theme continues
-                 to determine the Window background behind the Flutter UI. -->
             <meta-data
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
@@ -29,20 +30,27 @@
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
-         <meta-data
+        <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Bộ hẹn giờ tự xóa bộ nhớ tạm sau 15 phút (chỉ app này gọi được). -->
         <receiver
             android:name=".ClipboardClearReceiver"
             android:exported="false" />
+        <!-- Chia sẻ file APK đã tải cho trình cài đặt của Android (chỉ thư mục updates). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
-    <!-- Required to query activities that can process text, see:
-         https://developer.android.com/training/package-visibility and
-         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
-
-         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    <!-- Xem danh sách app có biểu tượng mở được, và xử lý văn bản của Flutter. -->
     <queries>
-            <intent>
+        <intent>
             <action android:name="android.intent.action.MAIN"/>
             <category android:name="android.intent.category.LAUNCHER"/>
         </intent>

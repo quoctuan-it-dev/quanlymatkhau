@@ -70,3 +70,9 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+
+dependencies {
+    // Dùng FileProvider để giao file APK cập nhật cho trình cài đặt của Android.
+    implementation("androidx.core:core:1.13.1")
+}

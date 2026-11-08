@@ -91,6 +91,23 @@ class MainActivity : FlutterActivity() {
                         else saveFile(name, bytes, result)
                     }
                     "openFile" -> openFile(result)
+                                        "getAppVersion" -> result.success(UpdateHelper.appVersion(this))
+                    "getUpdateDir" -> result.success(UpdateHelper.updateDir(this))
+                    "canInstallPackages" -> result.success(UpdateHelper.canInstallPackages(this))
+                    "openInstallPermissionSettings" -> {
+                        UpdateHelper.openInstallPermissionSettings(this)
+                        result.success(null)
+                    }
+                    "checkApk" -> {
+                        val path = call.argument<String>("path")
+                        if (path == null) result.error("ARG", "Thiếu path", null)
+                        else result.success(UpdateHelper.checkApk(this, path))
+                    }
+                    "installApk" -> {
+                        val path = call.argument<String>("path")
+                        if (path == null) result.error("ARG", "Thiếu path", null)
+                        else result.success(UpdateHelper.installApk(this, path))
+                    }
                     else -> result.notImplemented()
                 }
             }
